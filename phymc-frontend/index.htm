@@ -40,12 +40,13 @@
     <!-- The response from the backend will be displayed here -->
   </div>
 
+  <script src="config.js"></script>
   <script>
     // JavaScript to handle form submission
     document.getElementById('question-form').addEventListener('submit', function(event) {
       event.preventDefault(); // Prevent the form from submitting the traditional way
 
-      fetch('https://www.goodstudy.fi:8000/phymc-generate', {
+      fetch(apiUrl + '/phymc-generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
