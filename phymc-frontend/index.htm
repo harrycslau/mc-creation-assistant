@@ -10,14 +10,22 @@
   >
   <!-- Optional: Include Bootstrap JS -->
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <!-- Include marked.js for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Optional: Include DOMPurify for sanitizing HTML -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+
 </head>
 <body class="container my-5">
   <h1 class="text-center mb-4">Physics Multiple-Choice Question Assistant</h1>
   <form id="question-form">
     <div class="form-group">
-      <label for="question">Enter your physics question:</label>
+      <label for="question">Enter your physics question:</label><br>
+      <button type="button" id="try-example-btn1" class="btn btn-primary ml-2">Try Electric Circuit Example</button>
+      <button type="button" id="try-example-btn2" class="btn btn-primary ml-2">Try Heat Example</button>
+      <br>
       <textarea
-        class="form-control"
+        class="form-control mt-2"
         id="question"
         rows="6"
         placeholder="Type your question here..."
@@ -25,7 +33,7 @@
       ></textarea>
     </div>
     <div class="form-group">
-      <label for="answer">Enter your answer:</label>
+      <label for="answer">Enter your answer (optional but recommended):</label>
       <input
         type="text"
         class="form-control"
@@ -38,33 +46,72 @@
   </form>
   <div id="response" class="mt-5">
     <!-- The response from the backend will be displayed here -->
+    <h2>Response:</h2>
+    <div id="response-content" class="border p-3 rounded" style="min-height: 100px;"></div>
   </div>
 
   <script src="config.js"></script>
   <script>
-    // JavaScript to handle form submission
-    document.getElementById('question-form').addEventListener('submit', function(event) {
-      event.preventDefault(); // Prevent the form from submitting the traditional way
+    // JavaScript
+    document.getElementById('try-example-btn1').addEventListener('click', () => {
+      document.getElementById('question').value = 'The power ratings and resistances of two light bulbs are “12 W, 3 Ω” and “6 W, 6 Ω”. If these two light bulbs are connected in parallel to a power supply, they are working within their rated power. What is the maximum current drawn from the power supply?';
+      document.getElementById('answer').value = '3 A';
+    });
+    document.getElementById('try-example-btn2').addEventListener('click', () => {
+      document.getElementById('question').value = '1 kg water is heated by a 80 W heater. After 15 minutes, its temperature increases from 10°C to 22°C. What percentage of energy is lost to the surroundings? Given the specific heat capacity of water is 4200 J kg^-1 °C^-1.';
+      document.getElementById('answer').value = '30%';
+    });
 
-      fetch(apiUrl + '/phymc-generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          question: document.getElementById('question').value,
-          answer: document.getElementById('answer').value
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Display the response in the #response div
-        document.getElementById('response').innerHTML = `<h2>Response:</h2><pre>${data.response}</pre>`;
-      })
-      .catch(error => {
+    // Configure marked.js to treat single line breaks as <br> and enable GFM
+    marked.setOptions({
+      gfm: true,
+      breaks: true
+    });
+
+    // JavaScript to handle form submission
+    document.getElementById('question-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      const responseDiv = document.getElementById('response-content');
+      responseDiv.innerHTML = ''; // Clear previous response
+
+      try {
+        const response = await fetch(apiUrl + '/api/phymc-generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            question: document.getElementById('question').value,
+            answer: document.getElementById('answer').value
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Simulate streaming by revealing the response gradually
+        const fullResponse = data.response;
+        let displayedResponse = '';
+        const streamInterval = setInterval(() => {
+          if (displayedResponse.length < fullResponse.length) {
+            displayedResponse += fullResponse.charAt(displayedResponse.length);
+            // Parse the current displayed response as Markdown
+            const parsedMarkdown = marked.parse(displayedResponse);
+            // Sanitize the parsed HTML to prevent XSS attacks
+            const sanitizedHTML = DOMPurify.sanitize(parsedMarkdown);
+            responseDiv.innerHTML = sanitizedHTML;
+          } else {
+            clearInterval(streamInterval);
+          }
+        }, 10); // Adjust this value to control the speed of the simulated stream
+
+      } catch (error) {
         console.error('Error:', error);
-        document.getElementById('response').innerHTML = 'An error occurred while generating the response.';
-      });
+        responseDiv.innerHTML = '<span class="text-danger">An error occurred while generating the response.</span>';
+      }
     });
   </script>
 </body>
