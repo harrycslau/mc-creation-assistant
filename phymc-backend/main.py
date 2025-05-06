@@ -35,7 +35,7 @@ async def say_hello():
 async def generate(data: dict):
     user_content = data.get("question") + " Answer: " + data.get("answer")
     chat_completion = client.chat.completions.create(
-        model="llama-3.2-11b-text-preview",
+        model="llama-3.3-70b-versatile",
         max_tokens=2000,
         messages=[
             {
