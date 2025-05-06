@@ -1,6 +1,8 @@
 # Multiple-Choice Questions Creation Assistant
 A lightweight teacher tool to streamline the multiple-choice question creation process.
 
+[DEMO](https://www.goodstudy.fi/tools/phymc/)
+
 ## My Lessons Learned in This Project
 
 - **Using LLM APIs**: Gained experience integrating Large Language Model (LLM) APIs with FastAPI to create interactive web applications that utilize AI-powered responses.
